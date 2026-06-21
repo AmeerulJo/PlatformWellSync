@@ -34,22 +34,29 @@ The application performs the following tasks:
 ## Solution Structure
 
 ```text
-PlatformWellSync
+PlatformWellSync.sln
+
+PlatformWellSync.Console
 │
-├── docs
-│   └── TechnicalDesignDocument.docx
+├── Program.cs
+├── appsettings.json
 │
-├── PlatformWellSync.Console
-│   ├── Data
-│   ├── Models
-│   ├── Services
-│   ├── Program.cs
-│   ├── appsettings.json
-│   └── PlatformWellSync.Console.csproj
+├── Data
+│   └── ApplicationDbContext.cs
 │
-├── PlatformWellSync.sln
-├── README.md
-└── .gitignore
+├── Models
+│   ├── Platform.cs
+│   ├── Well.cs
+│   ├── LoginRequest.cs
+│   ├── LoginResponse.cs
+│   ├── PlatformDto.cs
+│   └── WellDto.cs
+│
+├── Services
+│   ├── ApiService.cs
+│   └── SyncService.cs
+│
+└── PlatformWellSync.Console.csproj
 ```
 
 ---
