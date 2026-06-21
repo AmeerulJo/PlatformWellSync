@@ -1,317 +1,258 @@
 # Platform Well Synchronization Application
 
-## Overview
+## 1. Overview
 
-This application synchronizes Platform and Well data from the Aemenersol REST API into a local SQL Server database.
+### Objective
 
-The application performs the following tasks:
+Develop a .NET application that synchronizes Platform and Well data from a REST API into a local SQL Server database.
 
-* Authenticates using the Login API.
-* Retrieves a Bearer Token.
-* Calls the GetPlatformWellActual API endpoint.
-* Stores Platform data into the Platform table.
-* Stores Well data into the Well table.
-* Performs Insert or Update (Upsert) operations based on record Id.
-* Handles missing JSON properties and additional JSON properties without breaking.
-* Uses Entity Framework Core Code First approach.
-* Uses SQL Server LocalDB as the database.
+### Requirements
 
----
-
-## Technology Stack
-
-| Technology            | Version                                  |
-| --------------------- | ---------------------------------------- |
-| .NET                  | 8                                        |
-| Entity Framework Core | 8                                        |
-| SQL Server            | LocalDB                                  |
-| C#                    | 12                                       |
-| HttpClient            | Built-in                                 |
-| Dependency Injection  | Microsoft.Extensions.DependencyInjection |
+* Authenticate using Login API.
+* Retrieve bearer token.
+* Call GetPlatformWellActual endpoint.
+* Store Platform data into Platform table.
+* Store Well data into Well table.
+* Perform Insert or Update based on record Id.
+* Handle missing fields and additional fields without application failure.
+* Use SQL Server LocalDB.
+* Use Entity Framework Core Code First approach.
 
 ---
 
-## Solution Structure
+## 2. Technology Stack
 
-```text
-PlatformWellSync.sln
-
-PlatformWellSync.Console
-│
-├── Program.cs
-├── appsettings.json
-│
-├── Data
-│   └── ApplicationDbContext.cs
-│
-├── Models
-│   ├── Platform.cs
-│   ├── Well.cs
-│   ├── LoginRequest.cs
-│   ├── LoginResponse.cs
-│   ├── PlatformDto.cs
-│   └── WellDto.cs
-│
-├── Services
-│   ├── ApiService.cs
-│   └── SyncService.cs
-│
-└── PlatformWellSync.Console.csproj
-```
+| Component            | Technology                               |
+| -------------------- | ---------------------------------------- |
+| Language             | C#                                       |
+| Framework            | .NET 8                                   |
+| Database             | SQL Server LocalDB                       |
+| ORM                  | Entity Framework Core 8                  |
+| HTTP Client          | HttpClient                               |
+| Dependency Injection | Microsoft.Extensions.DependencyInjection |
+| Configuration        | appsettings.json                         |
 
 ---
 
-## Prerequisites
+## 3. Application Architecture
 
-Before running the application, ensure the following are installed:
+### Flow
 
-* .NET 8 SDK
-* SQL Server LocalDB
-* Visual Studio 2022 (or later)
+1. Login to API
+2. Retrieve JWT Bearer Token
+3. Call GetPlatformWellActual
+4. Deserialize API Response
+5. Upsert Platform Records
+6. Upsert Well Records
+7. Save Changes to Database
 
-Verify installation:
+### Architecture Diagram
 
-```bash
-dotnet --version
-```
-
----
-
-## API Information
-
-### Login Credentials
-
-```text
-Username: user@aemenersol.com
-Password: Test@123
-```
-
-### API Documentation
-
-Swagger:
-
-http://test-demo.aemenersol.com/index.html
-
-Postman Collection:
-
-https://www.getpostman.com/collections/ed81f3774c5e051c89a9
-
----
-
-## Database Configuration
-
-Connection string is configured in:
-
-```json
-appsettings.json
-```
-
-Example:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\MSSQLLocalDB;Database=PlatformWellDb;Trusted_Connection=True;TrustServerCertificate=True"
-  }
-}
-```
-
----
-
-## Setup Instructions
-
-### 1. Clone Repository
-
-```bash
-git clone <repository-url>
-cd PlatformWellSync
-```
-
-### 2. Restore Packages
-
-```bash
-dotnet restore
-```
-
-### 3. Create Database Migration
-
-```bash
-dotnet ef migrations add InitialCreate
-```
-
-### 4. Update Database
-
-```bash
-dotnet ef database update
-```
-
-### 5. Run Application
-
-```bash
-dotnet run --project PlatformWellSync.Console
-```
-
----
-
-## Application Workflow
-
-```text
-Login API
-    │
-    ▼
-Retrieve Bearer Token
-    │
-    ▼
+API
+↓
+Authentication
+↓
+Bearer Token
+↓
 GetPlatformWellActual
-    │
-    ▼
-Deserialize Response
-    │
-    ▼
-Upsert Platform Records
-    │
-    ▼
-Upsert Well Records
-    │
-    ▼
-Save To Database
-```
+↓
+DTO Mapping
+↓
+Business Logic
+↓
+Entity Framework Core
+↓
+SQL Server LocalDB
 
 ---
 
-## Upsert Logic
+## 4. Database Design
 
-### Insert
+### Platform Table
+
+| Column       | Type          |
+| ------------ | ------------- |
+| Id           | int (PK)      |
+| PlatformName | nvarchar(200) |
+| CreatedDate  | datetime      |
+| UpdatedDate  | datetime      |
+
+### Well Table
+
+| Column      | Type          |
+| ----------- | ------------- |
+| Id          | int (PK)      |
+| PlatformId  | int (FK)      |
+| WellName    | nvarchar(200) |
+| CreatedDate | datetime      |
+| UpdatedDate | datetime      |
+
+### Relationship
+
+Platform (1) → (Many) Wells
+
+---
+
+## 5. Entity Framework Code First
+
+The database schema is generated using Entity Framework Core migrations.
+
+Migration Command:
+
+dotnet ef migrations add InitialCreate
+
+Database Creation:
+
+dotnet ef database update
+
+Automatic migration execution is performed during application startup.
+
+---
+
+## 6. Synchronization Logic
+
+### Insert Logic
 
 If record Id does not exist:
 
-* Insert Platform
-* Insert Well
+* Create new Platform record.
+* Create new Well record.
 
-### Update
+### Update Logic
 
 If record Id exists:
 
-* Update Platform
-* Update Well
+* Update Platform properties.
+* Update Well properties.
+
+### Pseudocode
+
+For each Platform:
+If Platform exists:
+Update Platform
+Else:
+Insert Platform
+
+```
+For each Well:
+    If Well exists:
+        Update Well
+    Else:
+        Insert Well
+```
+
+SaveChanges()
 
 ---
 
-## Handling Dynamic API Responses
+## 7. Error Handling
 
-The application is designed to tolerate API schema changes.
+### API Errors
 
-### Supported Scenarios
+* HTTP status validation
+* Unauthorized access handling
+* Retry-ready architecture
 
-#### Missing Property
+### Database Errors
 
-```json
-{
-  "id": 1,
-  "platformName": "Platform A"
-}
-```
+* Entity validation
+* Foreign key integrity
 
-Application continues successfully.
+### Logging
 
-#### Additional Property
+Application logs:
 
-```json
-{
-  "id": 1,
-  "platformName": "Platform A",
-  "newProperty": "ignored"
-}
-```
-
-Application ignores unknown properties.
-
-### Implementation
-
-* Nullable DTO properties
-* System.Text.Json deserialization
-* Unknown properties ignored automatically
+* Login Success
+* API Call Success
+* Platform Records Processed
+* Well Records Processed
+* Synchronization Completion
 
 ---
 
-## Entity Framework Core
+## 8. Dynamic JSON Handling
 
-This project uses the Code First approach.
+Requirement 7 states that the application must tolerate missing fields and additional fields.
 
-### Migration Command
+Implementation:
 
-```bash
+* Nullable DTO properties.
+* Case-insensitive JSON deserialization.
+* Unknown JSON properties ignored automatically.
+
+Example:
+
+Original JSON
+
+{
+"id": 1,
+"platformName": "Platform A"
+}
+
+Modified JSON
+
+{
+"id": 1,
+"platformName": "Platform A",
+"newProperty": "ignored"
+}
+
+Result:
+
+Application continues processing successfully.
+
+---
+
+## 9. Project Structure
+
+PlatformWellSync
+│
+├── Data
+├── Models
+├── Services
+├── appsettings.json
+├── Program.cs
+└── PlatformWellSync.Console.csproj
+
+---
+
+## 10. Build Instructions
+
+Restore Packages
+
+dotnet restore
+
+Create Migration
+
 dotnet ef migrations add InitialCreate
-```
 
-### Database Update
+Update Database
 
-```bash
 dotnet ef database update
-```
 
-### Automatic Migration
+Run Application
 
-Application startup executes:
-
-```csharp
-await db.Database.MigrateAsync();
-```
-
-to ensure the database schema is up to date.
+dotnet run
 
 ---
 
-## Tables
+## 11. Assumptions
 
-### Platform
-
-| Column       | Type     |
-| ------------ | -------- |
-| Id           | int      |
-| PlatformName | nvarchar |
-| CreatedDate  | datetime |
-| UpdatedDate  | datetime |
-
-### Well
-
-| Column      | Type     |
-| ----------- | -------- |
-| Id          | int      |
-| PlatformId  | int      |
-| WellName    | nvarchar |
-| CreatedDate | datetime |
-| UpdatedDate | datetime |
-
----
-
-## Assumptions
-
+* API credentials remain valid.
 * Platform Id is unique.
 * Well Id is unique.
-* API credentials remain valid.
-* LocalDB is installed on the target machine.
-* API availability is outside application control.
+* SQL Server LocalDB is installed.
+* API endpoint availability is outside application control.
 
 ---
 
-## Future Improvements
+## 12. Conclusion
 
-Possible enhancements include:
+The solution successfully fulfills all assessment requirements by:
 
-* Serilog logging
-* Retry policy using Polly
-* Unit tests using xUnit
-* Repository pattern
-* Scheduled synchronization using Hangfire or Windows Task Scheduler
-* Docker support
-
----
-
-## Author
-
-Technical Assessment Submission
-
-Platform Well Synchronization Application
-
-.NET 8 + Entity Framework Core + SQL Server LocalDB
+* Authenticating against the API.
+* Synchronizing Platform and Well data.
+* Supporting insert and update operations.
+* Using Entity Framework Core Code First.
+* Handling missing and additional JSON fields safely.
+* Persisting data in SQL Server LocalDB.
