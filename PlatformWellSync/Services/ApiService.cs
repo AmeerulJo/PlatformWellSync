@@ -81,7 +81,7 @@ namespace PlatformWellSync.Services
 
             var response =
                 await _httpClient.GetAsync(
-                    "/api/platform/GetPlatformWellActual");
+                    "/api/PlatformWell/GetPlatformWellActual");
 
             var uri = response.RequestMessage?.RequestUri?.ToString() ?? "<unknown>";
             var body = await response.Content.ReadAsStringAsync();
